@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "mlops hw fast appi app"
+version = "0.1.0"
+description = "ML fast api with minio"
+authors = ["Yaroslav Stepanov"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+fastapi = {extras = ["all"], version = "^0.105.0"}
+pandas = "^2.1.4"
+minio = "^7.2.0"
+scikit-learn = "^1.3.2"
+uvicorn = "^0.24.0.post1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
