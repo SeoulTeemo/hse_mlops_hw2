@@ -1,5 +1,0 @@
-[core]
-    remote = s3-data-storage
-['remote "s3-data-storage"']
-    url = s3://test-dvc-dir/
-    endpointurl = http://localhost:9000
