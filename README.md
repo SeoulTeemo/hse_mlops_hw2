@@ -24,5 +24,7 @@
 Далее можно перейти на localhost:8000 или localhost:8000/docs (Swagger) для использования.
 
 Например, если используем загруженный датасет titanic в функции fit_model:
+
 dataset: titanic
+
 target_col: Survived
