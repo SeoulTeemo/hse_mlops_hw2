@@ -16,7 +16,7 @@
 2) Добавлена работа с S3 (Minio). Датасеты загружаются через файлы .csv через API в Minio. 
 Обученные модели хранятся в bucket models, а датасеты в bucket datasets. 
 3) Добавлена работа с DVC для версионирования данных в Minio.
-4) Весь код (FastAPI + Minio) был упаакован в docker-compose с отдельным Dockerfile для FastAPI.
+4) Весь код (FastAPI + Minio) был упаакован в docker-compose с отдельным Dockerfile для FastAPI (Docker-образ пока не загружен в DockerHub для более удобного дебага).
 
 # Как запустить: 
 
