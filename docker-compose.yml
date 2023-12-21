@@ -1,30 +1,64 @@
 version: '3'
 
 services:
-   app:
-    build: .
-    ports:
-      - "8000:8000"
-    environment:
-      - MINIO_HOST=minio
-      - MINIO_PORT=9000
-      - MINIO_USER=lolkekcheburek
-      - MINIO_PASSWORD=lolkekcheburek
-    depends_on:
-      - minio
+    db:
+     image: postgres
+     container_name: postgres_db
+     restart: always
+     ports:
+       - "5432:5432"
+     environment:
+       - POSTGRES_USER=postgres_mlflow
+       - POSTGRES_PASSWORD=postgres_mlflow
+       - POSTGRES_DATABASE=postgres_mlflow
+     volumes:
+       - ./postgres_data:/var/lib/postgresql/data/
+     healthcheck:
+       test: [ "CMD", "pg_isready", "-p", "5432", "-U", "postgres_mlflow" ]
+       interval: 5s
+       timeout: 5s
+       retries: 3
 
-   minio:
-    image: minio/minio:latest
-    command: minio server --console-address ":9001" /data
-    environment:
-      - MINIO_ROOT_USER=lolkekcheburek
-      - MINIO_ROOT_PASSWORD=lolkekcheburek
-    ports:
-      - 9000:9000
-      - 9001:9001
-    volumes:
-      - ./data:/data
+    app:
+     build:
+       dockerfile: fastapi.Dockerfile
+     container_name: app
+     ports:
+       - "8000:8000"
+     environment:
+       - MINIO_HOST=minio
+       - MINIO_PORT=9000
+       - MINIO_USER=lolkekcheburek
+       - MINIO_PASSWORD=lolkekcheburek
+     depends_on:
+       - minio
+       - db
 
+    minio:
+     image: minio/minio:latest
+     container_name: minio
+     command: minio server --console-address ":9001" /data
+     environment:
+       - MINIO_ROOT_USER=lolkekcheburek
+       - MINIO_ROOT_PASSWORD=lolkekcheburek
+     ports:
+       - "9000:9000"
+       - "9001:9001"
+     volumes:
+       - ./minio_data:/data
+
+    tracking_server:
+      container_name: mlflow
+      build:
+        dockerfile: mlflow.Dockerfile
+      ports:
+        - "5000:5000"
+      command: >
+        mlflow server
+        --backend-store-uri postgresql://postgres_mlflow:postgres_mlflow@db:5432/postgres_mlflow
+        --host 0.0.0.0
+      depends_on:
+        - db
 
 
 

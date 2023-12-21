@@ -14,10 +14,14 @@ from app.models_setup import ModelName, DecisionTreeParams, LogisticRegressionPa
 from app.utils import create_bucket_if_not_exists, get_objects_in_bucket, load_dataset_from_minio, load_model_from_minio, \
     save_model_to_minio
 
+import mlflow
+
 app = FastAPI()
+mlflow.set_tracking_uri(uri="http://mlflow:5000")
 
 MODELS_BUCKET_NAME = 'models'
 DATASETS_BUCKET_NAME = 'datasets'
+MLFLOW_BUCKET_NAME = 'mlflow'
 
 # Get minio env variables
 minio_host = os.getenv('MINIO_HOST')
@@ -42,13 +46,7 @@ MinioClient = Minio(
     secure=False
 )
 
-# MinioClient = Minio(
-#     'localhost:9000',
-#     access_key='lolkekcheburek',
-#     secret_key='lolkekcheburek',
-#     secure=False
-# )
-
+create_bucket_if_not_exists(MLFLOW_BUCKET_NAME)
 
 @app.get("/")
 async def root():
@@ -137,6 +135,7 @@ async def fit_model(
     :param params: hyperparameters of the model
     :return:
     """
+
     # Check there are some params given
     if params is not None:
         hyperparams = params.model_dump()
@@ -163,11 +162,24 @@ async def fit_model(
     # Load the dataset and fit the model
     X, y = load_dataset_from_minio(dataset_name, target_col)
     X = X.fillna(0)
+
     clf = model.fit(X, y)
+
+    # Get y_proba
+    y_pred_proba = clf.predict_proba(X)[:, 1]
+    # Calculate some metric
+    auc = roc_auc_score(y, y_pred_proba)
+    metrics = {'auc': auc}
 
     # Save the model
     create_bucket_if_not_exists(MODELS_BUCKET_NAME)
     save_model_to_minio(clf, model_name_to_save, bucket_name=MODELS_BUCKET_NAME)
+
+    mlflow.set_experiment("MLflow FastAPI Experiment")
+    with mlflow.start_run(run_name=f'{model_name_to_save}_run') as run:
+        mlflow.log_params(hyperparams)
+        mlflow.log_metrics(metrics)
+        mlflow.sklearn.log_model(sk_model=clf, input_example=X, artifact_path=f'artifact_{model_name_to_save}')
 
     return {"message": f"The model {model_name_to_save} has been trained and saved successfully"}
 
